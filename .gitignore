@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Local-only screenshot tooling — kept out of the published repo
+scripts/
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

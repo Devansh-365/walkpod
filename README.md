@@ -1,73 +1,30 @@
-# React + TypeScript + Vite
+# walkpod
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A PWA for a 75-day walking-pad challenge. Spin the roller, log your km. The pill grid heatmaps your daily distances. No GPS, no backend, lives on your phone.
 
-Currently, two official plugins are available:
+<p align="center">
+  <img src="docs/screenshots/01-empty.png" alt="Empty state — day 1, no logs yet" width="260">
+  <img src="docs/screenshots/02-dashboard.png" alt="Dashboard with sample data — heatmap shaded by daily km" width="260">
+  <img src="docs/screenshots/03-roller.png" alt="Bottom sheet open with the iOS-style km roller picker" width="260">
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- 75 capsule pills, one per day, shaded like a GitHub contribution graph. More km that day, darker pill.
+- Tap the floating action button to open a bottom sheet with a roller picker. Spin it, hit log.
+- Tap any past pill to back-fill or edit that day.
+- Day 1 is whenever you log your first walk. Not whenever you opened the app.
+- Installable. Works offline. Data lives in your browser's `localStorage`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+Vite + React 19 + TypeScript, Tailwind v4, vite-plugin-pwa. That's the whole list.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Run it
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+`npm run build` typechecks and produces a static `dist/` with the service worker baked in.
