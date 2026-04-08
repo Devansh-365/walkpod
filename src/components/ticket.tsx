@@ -1,7 +1,6 @@
 import type { ChallengeState, DayEntry } from '../lib/storage'
 import { formatDateDots } from '../lib/storage'
 import { PillGrid } from './pill-grid'
-import { TaskRow } from './task-row'
 import { KmRoller } from './km-roller'
 
 type Props = {
@@ -9,10 +8,12 @@ type Props = {
   today: number
   completedDays: number
   progressPct: number
+  totalKm: number
   todayEntry: DayEntry | undefined
   pendingKm: number
   setPendingKm: (n: number) => void
   logToday: () => void
+  resetToday: () => void
 }
 
 export function Ticket({
@@ -20,15 +21,17 @@ export function Ticket({
   today,
   completedDays,
   progressPct,
+  totalKm,
   todayEntry,
   pendingKm,
   setPendingKm,
   logToday,
+  resetToday,
 }: Props) {
   const isDone = !!todayEntry?.done
 
   return (
-    <div className="relative w-full max-w-[480px] bg-cream min-h-screen">
+    <div className="relative w-full max-w-[480px] bg-cream min-h-screen flex flex-col">
       {/* Header */}
       <div className="px-7 pt-7 pb-5">
         <div className="flex items-start justify-between font-mono text-[11px] uppercase text-pomegranate-600 tracking-wider">
@@ -81,7 +84,7 @@ export function Ticket({
               lane 01
             </div>
             <div className="font-slab font-black text-pomegranate-600 text-[34px] leading-none mt-1">
-              {state.dailyTargetKm}KM WALK
+              DAILY WALK
             </div>
           </div>
           <div className="text-right">
@@ -108,20 +111,46 @@ export function Ticket({
         </div>
       </div>
 
-      {/* Today's task */}
-      <div className="px-7 pt-5 pb-8">
-        <TaskRow
-          checked={isDone}
-          label={`${state.dailyTargetKm}KM WALKING PAD`}
-          status={
-            isDone
-              ? `done — ${todayEntry?.km ?? 0} km`
-              : 'pending'
-          }
-        />
+      {/* Total km strip — quiet stat under the banner */}
+      <div className="px-7 pt-4 pb-2 flex items-baseline justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
+          total logged
+        </span>
+        <span className="font-slab font-black text-pomegranate-600 text-[22px] leading-none">
+          {totalKm.toFixed(1)}
+          <span className="font-mono text-[11px] tracking-widest ml-1">KM</span>
+        </span>
+      </div>
 
-        {!isDone && (
-          <div className="mt-5">
+      {/* Spacer pushes the sticky bottom panel down on tall screens.
+          Reserves room so content above isn't hidden behind it. */}
+      <div className="flex-1 min-h-[24px]" />
+      <div className="h-[280px]" aria-hidden="true" />
+
+      {/* Sticky action panel */}
+      <div className="sticky bottom-0 left-0 right-0 z-20 bg-cream px-7 pt-4 pb-7 border-t-2 border-pomegranate-600">
+        {isDone ? (
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
+                today, logged
+              </div>
+              <div className="font-slab font-black text-pomegranate-600 text-[44px] leading-none mt-1">
+                {(todayEntry?.km ?? 0).toFixed(1)}
+                <span className="font-mono text-[12px] tracking-widest ml-2">
+                  KM
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={resetToday}
+              className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-600 underline underline-offset-4 decoration-2 hover:text-pomegranate-700 active:translate-y-[1px] transition cursor-pointer"
+            >
+              edit
+            </button>
+          </div>
+        ) : (
+          <>
             <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-2">
               dial in today's distance
             </div>
@@ -129,14 +158,12 @@ export function Ticket({
             <button
               onClick={logToday}
               disabled={pendingKm <= 0}
-              className="mt-5 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
             >
               log {pendingKm.toFixed(1)} km
             </button>
-          </div>
+          </>
         )}
-
-        <div className="h-[2px] bg-pomegranate-600/80 mt-7" />
       </div>
     </div>
   )
