@@ -28,6 +28,10 @@ body {
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent any descendant (popovers, oversized headings, decorative
+     absolutes) from creating a horizontal scroll that would make
+     w-full elements appear narrower than the viewport. */
+  overflow-x: clip;
 }
 
 /* Hide scrollbar across browsers — used by the km roller wheels */

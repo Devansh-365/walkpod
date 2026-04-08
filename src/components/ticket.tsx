@@ -41,7 +41,7 @@ export function Ticket({
   const editingDate = editingDay !== null ? dateForDay(state.startDate, editingDay) : null
 
   return (
-    <div className="relative w-full max-w-[480px] bg-cream min-h-screen flex flex-col">
+    <div className="relative w-full max-w-[480px] bg-cream min-h-screen flex flex-col overflow-x-clip">
       {/* Header */}
       <div className="px-7 pt-7 pb-5">
         <div className="flex items-start justify-between font-mono text-[11px] uppercase text-pomegranate-600 tracking-wider">
@@ -58,7 +58,7 @@ export function Ticket({
         </div>
 
         <div className="relative mt-6">
-          <h1 className="font-slab font-black text-pomegranate-600 leading-[0.92] tracking-tight text-[58px]">
+          <h1 className="font-slab font-black text-pomegranate-600 leading-[0.92] tracking-tight text-[clamp(44px,14vw,62px)]">
             {state.totalDays} DAY
             <br />
             CHALLENGE
@@ -132,14 +132,14 @@ export function Ticket({
       </div>
 
       {/* Today's drill banner */}
-      <div className="bg-pomegranate-600 text-cream py-3 mt-2">
-        <div className="font-mono text-[13px] tracking-[0.2em] uppercase text-center">
+      <div className="bg-pomegranate-600 text-cream py-4 mt-6">
+        <div className="font-mono text-[13px] tracking-[0.2em] uppercase text-center pl-[0.2em]">
           today's drill — day {today}
         </div>
       </div>
 
       {/* Stats strip — total + today */}
-      <div className="px-7 pt-5 pb-2 flex items-baseline justify-between">
+      <div className="px-7 pt-6 pb-2 flex items-baseline justify-between">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
             total logged
@@ -174,7 +174,7 @@ export function Ticket({
         title={`Log day ${editingDay ?? ''}`}
       >
         <div className="px-7 pt-3 pb-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1 pl-[0.22em]">
             day {editingDay ?? today}
             {editingDate && <span className="opacity-60"> · {formatDateDots(editingDate)}</span>}
             {' — '}
