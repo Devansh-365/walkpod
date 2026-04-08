@@ -23,7 +23,7 @@
 html,
 body {
   margin: 0;
-  background: var(--color-ink);
+  background: var(--color-cream);
   color: var(--color-pomegranate-700);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;

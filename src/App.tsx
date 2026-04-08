@@ -58,7 +58,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-ink flex items-start sm:items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen w-full bg-cream flex justify-center">
       <Ticket
         state={state}
         today={today}

@@ -27,7 +27,7 @@ export function Ticket({
   toggleReading,
 }: Props) {
   return (
-    <div className="relative w-full max-w-[420px] bg-cream rounded-[36px] overflow-hidden shadow-2xl ring-1 ring-black/10">
+    <div className="relative w-full max-w-[480px] bg-cream min-h-screen">
       {/* Header */}
       <div className="px-7 pt-7 pb-5">
         <div className="flex items-start justify-between font-mono text-[11px] uppercase text-pomegranate-600 tracking-wider">
