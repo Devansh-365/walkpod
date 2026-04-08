@@ -2,6 +2,8 @@ import type { ChallengeState, DayEntry } from '../lib/storage'
 import { formatDateDots } from '../lib/storage'
 import { PillGrid } from './pill-grid'
 import { KmRoller } from './km-roller'
+import { BottomSheet } from './bottom-sheet'
+import { Fab } from './fab'
 
 type Props = {
   state: ChallengeState
@@ -13,7 +15,9 @@ type Props = {
   pendingKm: number
   setPendingKm: (n: number) => void
   logToday: () => void
-  resetToday: () => void
+  sheetOpen: boolean
+  openSheet: () => void
+  closeSheet: () => void
 }
 
 export function Ticket({
@@ -26,7 +30,9 @@ export function Ticket({
   pendingKm,
   setPendingKm,
   logToday,
-  resetToday,
+  sheetOpen,
+  openSheet,
+  closeSheet,
 }: Props) {
   const isDone = !!todayEntry?.done
 
@@ -99,9 +105,20 @@ export function Ticket({
         <div className="h-[2px] bg-pomegranate-600 mt-4" />
       </div>
 
-      {/* Pill grid */}
+      {/* Pill grid (heatmap) */}
       <div className="px-6 pt-4 pb-2">
-        <PillGrid total={state.totalDays} filled={completedDays} cols={15} />
+        <PillGrid total={state.totalDays} entries={state.entries} cols={15} />
+      </div>
+
+      {/* Heatmap legend */}
+      <div className="px-7 pt-3 pb-2 flex items-center justify-end gap-2 font-mono text-[9px] uppercase tracking-widest text-pomegranate-400">
+        <span>less</span>
+        <span className="w-3 h-3 rounded-full border-2 border-pomegranate-300" />
+        <span className="w-3 h-3 rounded-full bg-pomegranate-300" />
+        <span className="w-3 h-3 rounded-full bg-pomegranate-500" />
+        <span className="w-3 h-3 rounded-full bg-pomegranate-600" />
+        <span className="w-3 h-3 rounded-full bg-pomegranate-800" />
+        <span>more</span>
       </div>
 
       {/* Today's drill banner */}
@@ -111,60 +128,51 @@ export function Ticket({
         </div>
       </div>
 
-      {/* Total km strip — quiet stat under the banner */}
-      <div className="px-7 pt-4 pb-2 flex items-baseline justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
-          total logged
-        </span>
-        <span className="font-slab font-black text-pomegranate-600 text-[22px] leading-none">
-          {totalKm.toFixed(1)}
-          <span className="font-mono text-[11px] tracking-widest ml-1">KM</span>
-        </span>
-      </div>
-
-      {/* Spacer pushes the sticky bottom panel down on tall screens.
-          Reserves room so content above isn't hidden behind it. */}
-      <div className="flex-1 min-h-[24px]" />
-      <div className="h-[280px]" aria-hidden="true" />
-
-      {/* Sticky action panel */}
-      <div className="sticky bottom-0 left-0 right-0 z-20 bg-cream px-7 pt-4 pb-7 border-t-2 border-pomegranate-600">
-        {isDone ? (
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
-                today, logged
-              </div>
-              <div className="font-slab font-black text-pomegranate-600 text-[44px] leading-none mt-1">
-                {(todayEntry?.km ?? 0).toFixed(1)}
-                <span className="font-mono text-[12px] tracking-widest ml-2">
-                  KM
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={resetToday}
-              className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-600 underline underline-offset-4 decoration-2 hover:text-pomegranate-700 active:translate-y-[1px] transition cursor-pointer"
-            >
-              edit
-            </button>
+      {/* Stats strip — total + today */}
+      <div className="px-7 pt-5 pb-2 flex items-baseline justify-between">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
+            total logged
           </div>
-        ) : (
-          <>
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-2">
-              dial in today's distance
-            </div>
-            <KmRoller value={pendingKm} onChange={setPendingKm} />
-            <button
-              onClick={logToday}
-              disabled={pendingKm <= 0}
-              className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-            >
-              log {pendingKm.toFixed(1)} km
-            </button>
-          </>
-        )}
+          <div className="font-slab font-black text-pomegranate-600 text-[28px] leading-none mt-1">
+            {totalKm.toFixed(1)}
+            <span className="font-mono text-[11px] tracking-widest ml-1">KM</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
+            today
+          </div>
+          <div className="font-slab font-black text-pomegranate-600 text-[28px] leading-none mt-1">
+            {isDone ? (todayEntry?.km ?? 0).toFixed(1) : '—'}
+            <span className="font-mono text-[11px] tracking-widest ml-1">KM</span>
+          </div>
+        </div>
       </div>
+
+      {/* Bottom safe area for the FAB */}
+      <div className="flex-1" />
+      <div className="h-[120px]" aria-hidden="true" />
+
+      {/* Floating action button */}
+      <Fab onClick={openSheet} isDone={isDone} />
+
+      {/* Bottom sheet — km roller + log */}
+      <BottomSheet open={sheetOpen} onClose={closeSheet} title="Log today's distance">
+        <div className="px-7 pt-3 pb-8">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1">
+            day {today} — {isDone ? 'edit distance' : 'dial in distance'}
+          </div>
+          <KmRoller value={pendingKm} onChange={setPendingKm} />
+          <button
+            onClick={logToday}
+            disabled={pendingKm <= 0}
+            className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+          >
+            {isDone ? 'update' : 'log'} {pendingKm.toFixed(1)} km
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   )
 }

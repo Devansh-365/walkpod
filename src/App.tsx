@@ -5,6 +5,7 @@ import { useChallenge, currentDayNumber } from './lib/storage'
 function App() {
   const [state, setState] = useChallenge()
   const [pendingKm, setPendingKm] = useState<number>(5)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const today = useMemo(
     () =>
@@ -28,11 +29,22 @@ function App() {
     [state.entries],
   )
 
-  // Progress is now consistency-based: % of days completed in the challenge.
+  // Consistency-based progress: % of days completed in the challenge.
   const progressPct = Math.min(
     100,
     Math.round((completedDays / state.totalDays) * 100),
   )
+
+  function openSheet() {
+    // Prefill the roller with today's logged value if it exists, otherwise
+    // keep the current scratch value.
+    if (todayEntry?.km) setPendingKm(todayEntry.km)
+    setSheetOpen(true)
+  }
+
+  function closeSheet() {
+    setSheetOpen(false)
+  }
 
   function logToday() {
     if (pendingKm <= 0) return
@@ -43,16 +55,7 @@ function App() {
         [today]: { km: pendingKm, done: true },
       },
     }))
-  }
-
-  function resetToday() {
-    setState((s) => {
-      const next = { ...s.entries }
-      delete next[today]
-      return { ...s, entries: next }
-    })
-    // Pre-fill the roller with whatever they had logged so editing is fast.
-    if (todayEntry?.km) setPendingKm(todayEntry.km)
+    setSheetOpen(false)
   }
 
   return (
@@ -67,7 +70,9 @@ function App() {
         pendingKm={pendingKm}
         setPendingKm={setPendingKm}
         logToday={logToday}
-        resetToday={resetToday}
+        sheetOpen={sheetOpen}
+        openSheet={openSheet}
+        closeSheet={closeSheet}
       />
     </div>
   )
