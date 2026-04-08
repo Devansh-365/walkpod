@@ -3,7 +3,9 @@ import type { DayEntry } from '../lib/storage'
 type Props = {
   total: number
   entries: Record<number, DayEntry>
+  today: number
   cols?: number
+  onSelectDay: (day: number) => void
 }
 
 /**
@@ -11,20 +13,29 @@ type Props = {
  * Pills are shaded relative to the user's max km in the dataset, like a
  * GitHub contribution graph: more km = darker pomegranate. Empty days
  * stay outlined.
+ *
+ * Each pill is clickable: tapping a past or current day opens the
+ * editor sheet via onSelectDay. Future days are non-interactive.
+ * Hover reveals a small popover with the day's status.
  */
-export function PillGrid({ total, entries, cols = 15 }: Props) {
-  // Max km across all completed days. The scale is *relative* — as the
-  // user pushes their max higher, lighter days re-bucket downward.
+export function PillGrid({
+  total,
+  entries,
+  today,
+  cols = 15,
+  onSelectDay,
+}: Props) {
   const maxKm = Object.values(entries).reduce(
     (m, e) => (e.done && e.km > m ? e.km : m),
     0,
   )
 
-  function shadeClass(day: number): string {
+  function shadeClass(day: number, isFuture: boolean): string {
     const e = entries[day]
     if (!e?.done || e.km <= 0) {
-      // Empty: outlined only
-      return 'bg-transparent border-2 border-pomegranate-300'
+      return isFuture
+        ? 'bg-transparent border-2 border-pomegranate-200'
+        : 'bg-transparent border-2 border-pomegranate-300'
     }
     if (maxKm <= 0) return 'bg-pomegranate-300 border-2 border-pomegranate-300'
     const ratio = e.km / maxKm
@@ -44,15 +55,53 @@ export function PillGrid({ total, entries, cols = 15 }: Props) {
     >
       {Array.from({ length: total }, (_, i) => i + 1).map((day) => {
         const e = entries[day]
-        const title = e?.done
-          ? `Day ${day} — ${e.km.toFixed(1)} km`
-          : `Day ${day} — not logged`
+        const isFuture = day > today
+        const isToday = day === today
+
+        const label = e?.done
+          ? `${e.km.toFixed(1)} km`
+          : isFuture
+            ? 'locked'
+            : isToday
+              ? 'tap to log'
+              : 'missed'
+
         return (
-          <div
-            key={day}
-            title={title}
-            className={'h-[34px] rounded-full transition-colors ' + shadeClass(day)}
-          />
+          <div key={day} className="group/pill relative flex justify-center">
+            <button
+              type="button"
+              disabled={isFuture}
+              onClick={() => onSelectDay(day)}
+              aria-label={`Day ${day}, ${label}`}
+              className={
+                'w-full h-[34px] rounded-full transition-all duration-150 ' +
+                shadeClass(day, isFuture) +
+                (isFuture
+                  ? ' cursor-not-allowed opacity-60'
+                  : ' cursor-pointer hover:scale-[1.08] active:scale-95') +
+                (isToday ? ' ring-2 ring-pomegranate-600 ring-offset-2 ring-offset-cream' : '')
+              }
+            />
+
+            {/* Hover popover — desktop only via group-hover, ignored on touch */}
+            <div
+              role="tooltip"
+              className={
+                'pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-30 ' +
+                'opacity-0 translate-y-1 group-hover/pill:opacity-100 group-hover/pill:translate-y-0 ' +
+                'transition-all duration-150 whitespace-nowrap'
+              }
+            >
+              <div className="bg-pomegranate-700 text-cream px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider rounded-sm shadow-lg">
+                <span className="opacity-70">day </span>
+                <span className="font-bold">{String(day).padStart(2, '0')}</span>
+                <span className="opacity-50 mx-1.5">·</span>
+                <span className="font-bold">{label}</span>
+              </div>
+              {/* Arrow */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-pomegranate-700" />
+            </div>
+          </div>
         )
       })}
     </div>

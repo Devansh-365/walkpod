@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Ticket } from './components/ticket'
-import { useChallenge, currentDayNumber } from './lib/storage'
+import { useChallenge, currentDayNumber, todayIso } from './lib/storage'
 
 function App() {
   const [state, setState] = useChallenge()
   const [pendingKm, setPendingKm] = useState<number>(5)
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editingDay, setEditingDay] = useState<number | null>(null)
 
   const today = useMemo(
     () =>
@@ -29,33 +29,35 @@ function App() {
     [state.entries],
   )
 
-  // Consistency-based progress: % of days completed in the challenge.
   const progressPct = Math.min(
     100,
     Math.round((completedDays / state.totalDays) * 100),
   )
 
-  function openSheet() {
-    // Prefill the roller with today's logged value if it exists, otherwise
-    // keep the current scratch value.
-    if (todayEntry?.km) setPendingKm(todayEntry.km)
-    setSheetOpen(true)
+  function openSheet(day: number) {
+    // Disallow logging future days.
+    if (day > today) return
+    const existing = state.entries[day]
+    setPendingKm(existing?.km && existing.km > 0 ? existing.km : 5)
+    setEditingDay(day)
   }
 
   function closeSheet() {
-    setSheetOpen(false)
+    setEditingDay(null)
   }
 
-  function logToday() {
-    if (pendingKm <= 0) return
+  function logEntry() {
+    if (pendingKm <= 0 || editingDay == null) return
     setState((s) => ({
       ...s,
+      // First-ever log seeds the start date so day 1 == today.
+      startDate: s.startDate ?? todayIso(),
       entries: {
         ...s.entries,
-        [today]: { km: pendingKm, done: true },
+        [editingDay]: { km: pendingKm, done: true },
       },
     }))
-    setSheetOpen(false)
+    setEditingDay(null)
   }
 
   return (
@@ -67,10 +69,10 @@ function App() {
         progressPct={progressPct}
         totalKm={totalKm}
         todayEntry={todayEntry}
+        editingDay={editingDay}
         pendingKm={pendingKm}
         setPendingKm={setPendingKm}
-        logToday={logToday}
-        sheetOpen={sheetOpen}
+        logEntry={logEntry}
         openSheet={openSheet}
         closeSheet={closeSheet}
       />

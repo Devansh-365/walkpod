@@ -6,18 +6,17 @@ export type DayEntry = {
 }
 
 export type ChallengeState = {
-  startDate: string // ISO yyyy-mm-dd
+  // null until the user logs their first km — day 1 is whenever that happens.
+  startDate: string | null
   totalDays: number
-  dailyTargetKm: number
   entries: Record<number, DayEntry> // keyed by 1-based day index
 }
 
 const STORAGE_KEY = 'walkpod:challenge:v1'
 
 const defaultState: ChallengeState = {
-  startDate: new Date().toISOString().slice(0, 10),
+  startDate: null,
   totalDays: 75,
-  dailyTargetKm: 10,
   entries: {},
 }
 
@@ -42,16 +41,42 @@ export function useChallenge() {
   return [state, setState] as const
 }
 
-export function currentDayNumber(startDate: string): number {
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+/**
+ * Returns the current 1-based day number of the challenge. If the
+ * challenge hasn't started yet (no startDate), returns 1 — meaning
+ * "today is day 1 if you log right now".
+ */
+export function currentDayNumber(startDate: string | null): number {
+  if (!startDate) return 1
   const start = new Date(startDate + 'T00:00:00')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const diff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-  return diff + 1 // day 1 on the start date
+  const diff = Math.floor(
+    (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+  )
+  return diff + 1
 }
 
-export function formatDateDots(iso: string): string {
-  // 01 . 10 . 2023
+/**
+ * Convert a 1-based day number into the calendar date for that day,
+ * using startDate as day 1. Returns null if the challenge hasn't started.
+ */
+export function dateForDay(
+  startDate: string | null,
+  day: number,
+): string | null {
+  if (!startDate) return null
+  const start = new Date(startDate + 'T00:00:00')
+  start.setDate(start.getDate() + (day - 1))
+  return start.toISOString().slice(0, 10)
+}
+
+export function formatDateDots(iso: string | null): string {
+  if (!iso) return '-- . -- . ----'
   const [y, m, d] = iso.split('-')
   return `${d} . ${m} . ${y}`
 }

@@ -1,5 +1,5 @@
 import type { ChallengeState, DayEntry } from '../lib/storage'
-import { formatDateDots } from '../lib/storage'
+import { formatDateDots, dateForDay } from '../lib/storage'
 import { PillGrid } from './pill-grid'
 import { KmRoller } from './km-roller'
 import { BottomSheet } from './bottom-sheet'
@@ -12,11 +12,11 @@ type Props = {
   progressPct: number
   totalKm: number
   todayEntry: DayEntry | undefined
+  editingDay: number | null
   pendingKm: number
   setPendingKm: (n: number) => void
-  logToday: () => void
-  sheetOpen: boolean
-  openSheet: () => void
+  logEntry: () => void
+  openSheet: (day: number) => void
   closeSheet: () => void
 }
 
@@ -27,14 +27,18 @@ export function Ticket({
   progressPct,
   totalKm,
   todayEntry,
+  editingDay,
   pendingKm,
   setPendingKm,
-  logToday,
-  sheetOpen,
+  logEntry,
   openSheet,
   closeSheet,
 }: Props) {
   const isDone = !!todayEntry?.done
+  const sheetOpen = editingDay !== null
+  const editingExisting =
+    editingDay !== null && !!state.entries[editingDay]?.done
+  const editingDate = editingDay !== null ? dateForDay(state.startDate, editingDay) : null
 
   return (
     <div className="relative w-full max-w-[480px] bg-cream min-h-screen flex flex-col">
@@ -105,9 +109,15 @@ export function Ticket({
         <div className="h-[2px] bg-pomegranate-600 mt-4" />
       </div>
 
-      {/* Pill grid (heatmap) */}
+      {/* Pill grid heatmap */}
       <div className="px-6 pt-4 pb-2">
-        <PillGrid total={state.totalDays} entries={state.entries} cols={15} />
+        <PillGrid
+          total={state.totalDays}
+          entries={state.entries}
+          today={today}
+          cols={15}
+          onSelectDay={openSheet}
+        />
       </div>
 
       {/* Heatmap legend */}
@@ -154,22 +164,29 @@ export function Ticket({
       <div className="flex-1" />
       <div className="h-[120px]" aria-hidden="true" />
 
-      {/* Floating action button */}
-      <Fab onClick={openSheet} isDone={isDone} />
+      {/* Floating action button — always logs/edits TODAY */}
+      <Fab onClick={() => openSheet(today)} isDone={isDone} />
 
       {/* Bottom sheet — km roller + log */}
-      <BottomSheet open={sheetOpen} onClose={closeSheet} title="Log today's distance">
+      <BottomSheet
+        open={sheetOpen}
+        onClose={closeSheet}
+        title={`Log day ${editingDay ?? ''}`}
+      >
         <div className="px-7 pt-3 pb-8">
           <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1">
-            day {today} — {isDone ? 'edit distance' : 'dial in distance'}
+            day {editingDay ?? today}
+            {editingDate && <span className="opacity-60"> · {formatDateDots(editingDate)}</span>}
+            {' — '}
+            {editingExisting ? 'edit distance' : 'dial in distance'}
           </div>
           <KmRoller value={pendingKm} onChange={setPendingKm} />
           <button
-            onClick={logToday}
+            onClick={logEntry}
             disabled={pendingKm <= 0}
             className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
           >
-            {isDone ? 'update' : 'log'} {pendingKm.toFixed(1)} km
+            {editingExisting ? 'update' : 'log'} {pendingKm.toFixed(1)} km
           </button>
         </div>
       </BottomSheet>
