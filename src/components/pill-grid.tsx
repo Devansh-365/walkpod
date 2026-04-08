@@ -67,30 +67,26 @@ export function PillGrid({
               : 'missed'
 
         return (
-          <div key={day} className="group/pill relative flex justify-center">
+          <div key={day} className="group/pill relative">
             <button
               type="button"
               disabled={isFuture}
               onClick={() => onSelectDay(day)}
               aria-label={`Day ${day}, ${label}`}
               className={
-                'w-full h-[34px] rounded-full transition-all duration-150 ' +
+                'block w-full h-[34px] rounded-full transition-transform duration-150 ' +
                 shadeClass(day, isFuture) +
                 (isFuture
-                  ? ' cursor-not-allowed opacity-60'
-                  : ' cursor-pointer hover:scale-[1.08] active:scale-95') +
-                (isToday ? ' ring-2 ring-pomegranate-600 ring-offset-2 ring-offset-cream' : '')
+                  ? ' cursor-not-allowed'
+                  : ' cursor-pointer hover:scale-110 active:scale-95') +
+                (isToday ? ' outline outline-2 outline-offset-1 outline-pomegranate-700' : '')
               }
             />
 
-            {/* Hover popover — desktop only via group-hover, ignored on touch */}
+            {/* Hover popover — pure CSS, no JS state */}
             <div
               role="tooltip"
-              className={
-                'pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-30 ' +
-                'opacity-0 translate-y-1 group-hover/pill:opacity-100 group-hover/pill:translate-y-0 ' +
-                'transition-all duration-150 whitespace-nowrap'
-              }
+              className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 z-30 opacity-0 group-hover/pill:opacity-100 transition-opacity duration-150 whitespace-nowrap"
             >
               <div className="bg-pomegranate-700 text-cream px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider rounded-sm shadow-lg">
                 <span className="opacity-70">day </span>
@@ -98,7 +94,6 @@ export function PillGrid({
                 <span className="opacity-50 mx-1.5">·</span>
                 <span className="font-bold">{label}</span>
               </div>
-              {/* Arrow */}
               <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-pomegranate-700" />
             </div>
           </div>
