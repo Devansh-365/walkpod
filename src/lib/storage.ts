@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 export type DayEntry = {
   km: number
   done: boolean
-  reading?: boolean
 }
 
 export type ChallengeState = {

@@ -2,6 +2,7 @@ import type { ChallengeState, DayEntry } from '../lib/storage'
 import { formatDateDots } from '../lib/storage'
 import { PillGrid } from './pill-grid'
 import { TaskRow } from './task-row'
+import { KmRoller } from './km-roller'
 
 type Props = {
   state: ChallengeState
@@ -9,10 +10,9 @@ type Props = {
   completedDays: number
   progressPct: number
   todayEntry: DayEntry | undefined
-  kmInput: string
-  setKmInput: (v: string) => void
+  pendingKm: number
+  setPendingKm: (n: number) => void
   logToday: () => void
-  toggleReading: () => void
 }
 
 export function Ticket({
@@ -21,11 +21,12 @@ export function Ticket({
   completedDays,
   progressPct,
   todayEntry,
-  kmInput,
-  setKmInput,
+  pendingKm,
+  setPendingKm,
   logToday,
-  toggleReading,
 }: Props) {
+  const isDone = !!todayEntry?.done
+
   return (
     <div className="relative w-full max-w-[480px] bg-cream min-h-screen">
       {/* Header */}
@@ -107,41 +108,35 @@ export function Ticket({
         </div>
       </div>
 
-      {/* Tasks */}
-      <div className="px-7 pt-5 pb-7 space-y-4">
+      {/* Today's task */}
+      <div className="px-7 pt-5 pb-8">
         <TaskRow
-          checked={!!todayEntry?.done}
+          checked={isDone}
           label={`${state.dailyTargetKm}KM WALKING PAD`}
-          status={todayEntry?.done ? 'done' : 'pending'}
+          status={
+            isDone
+              ? `done — ${todayEntry?.km ?? 0} km`
+              : 'pending'
+          }
         />
-        {!todayEntry?.done && (
-          <div className="flex gap-2 pl-[60px] -mt-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              min="0"
-              value={kmInput}
-              onChange={(e) => setKmInput(e.target.value)}
-              placeholder="km"
-              className="flex-1 bg-transparent border-2 border-pomegranate-600 px-3 py-2 font-mono text-pomegranate-700 placeholder:text-pomegranate-300 focus:outline-none focus:bg-pomegranate-600/5"
-            />
+
+        {!isDone && (
+          <div className="mt-5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-2">
+              dial in today's distance
+            </div>
+            <KmRoller value={pendingKm} onChange={setPendingKm} />
             <button
               onClick={logToday}
-              className="bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-widest px-4 py-2 hover:bg-pomegranate-700 active:scale-95 transition"
+              disabled={pendingKm <= 0}
+              className="mt-5 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
             >
-              log
+              log {pendingKm.toFixed(1)} km
             </button>
           </div>
         )}
-        <div className="h-[2px] bg-pomegranate-600/80" />
-        <TaskRow
-          checked={!!todayEntry?.reading}
-          label="DAILY READING PAGES"
-          status={todayEntry?.reading ? 'done' : 'pending'}
-          onToggle={toggleReading}
-        />
-        <div className="h-[2px] bg-pomegranate-600/80" />
+
+        <div className="h-[2px] bg-pomegranate-600/80 mt-7" />
       </div>
     </div>
   )

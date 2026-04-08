@@ -1,7 +1,7 @@
 type Props = {
   checked: boolean
   label: string
-  status: 'done' | 'pending'
+  status: string
   onToggle?: () => void
 }
 

@@ -4,10 +4,11 @@ import { useChallenge, currentDayNumber } from './lib/storage'
 
 function App() {
   const [state, setState] = useChallenge()
-  const [kmInput, setKmInput] = useState('')
+  const [pendingKm, setPendingKm] = useState<number>(state.dailyTargetKm)
 
   const today = useMemo(
-    () => Math.min(state.totalDays, Math.max(1, currentDayNumber(state.startDate))),
+    () =>
+      Math.min(state.totalDays, Math.max(1, currentDayNumber(state.startDate))),
     [state.startDate, state.totalDays],
   )
 
@@ -28,31 +29,15 @@ function App() {
   )
 
   const targetKm = state.dailyTargetKm * state.totalDays
-  const progressPct = Math.round((totalKm / targetKm) * 100)
+  const progressPct = Math.min(100, Math.round((totalKm / targetKm) * 100))
 
   function logToday() {
-    const km = parseFloat(kmInput)
-    if (!Number.isFinite(km) || km <= 0) return
+    if (pendingKm <= 0) return
     setState((s) => ({
       ...s,
       entries: {
         ...s.entries,
-        [today]: { km, done: true, reading: s.entries[today]?.reading ?? false },
-      },
-    }))
-    setKmInput('')
-  }
-
-  function toggleReading() {
-    setState((s) => ({
-      ...s,
-      entries: {
-        ...s.entries,
-        [today]: {
-          km: s.entries[today]?.km ?? 0,
-          done: s.entries[today]?.done ?? false,
-          reading: !s.entries[today]?.reading,
-        },
+        [today]: { km: pendingKm, done: true },
       },
     }))
   }
@@ -65,10 +50,9 @@ function App() {
         completedDays={completedDays}
         progressPct={progressPct}
         todayEntry={todayEntry}
-        kmInput={kmInput}
-        setKmInput={setKmInput}
+        pendingKm={pendingKm}
+        setPendingKm={setPendingKm}
         logToday={logToday}
-        toggleReading={toggleReading}
       />
     </div>
   )

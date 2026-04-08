@@ -29,3 +29,31 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Hide scrollbar across browsers — used by the km roller wheels */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* iOS-picker-style top/bottom fade so distant numbers gracefully dissolve.
+   Uses mask-image (no extra DOM, no DOM repaints, GPU-accelerated). */
+.km-roller-mask {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 22%,
+    #000 78%,
+    transparent 100%
+  );
+}
