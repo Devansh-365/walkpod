@@ -1,4 +1,5 @@
 import type { DayEntry } from '../lib/storage'
+import { dayKm, isDayDone } from '../lib/storage'
 
 type Props = {
   total: number
@@ -26,26 +27,27 @@ export function PillGrid({
   onSelectDay,
 }: Props) {
   const maxKm = Object.values(entries).reduce(
-    (m, e) => (e.done && e.km > m ? e.km : m),
+    (m, e) => Math.max(m, dayKm(e)),
     0,
   )
 
   function shadeClass(day: number, isFuture: boolean): string {
     const e = entries[day]
-    if (!e?.done || e.km <= 0) {
+    const km = dayKm(e)
+    if (!isDayDone(e) || km <= 0) {
       return isFuture
         ? 'bg-transparent border-2 border-pomegranate-200'
         : 'bg-transparent border-2 border-pomegranate-300'
     }
     if (maxKm <= 0) return 'bg-pomegranate-300 border-2 border-pomegranate-300'
-    const ratio = e.km / maxKm
+    const ratio = km / maxKm
     if (ratio >= 0.85) return 'bg-pomegranate-800 border-2 border-pomegranate-800'
     if (ratio >= 0.6) return 'bg-pomegranate-600 border-2 border-pomegranate-600'
     if (ratio >= 0.35) return 'bg-pomegranate-500 border-2 border-pomegranate-500'
     return 'bg-pomegranate-300 border-2 border-pomegranate-300'
   }
 
-  const completed = Object.values(entries).filter((e) => e.done).length
+  const completed = Object.values(entries).filter(isDayDone).length
 
   return (
     <div
@@ -55,11 +57,13 @@ export function PillGrid({
     >
       {Array.from({ length: total }, (_, i) => i + 1).map((day) => {
         const e = entries[day]
+        const km = dayKm(e)
+        const sessionCount = e?.sessions.length ?? 0
         const isFuture = day > today
         const isToday = day === today
 
-        const label = e?.done
-          ? `${e.km.toFixed(1)} km`
+        const label = isDayDone(e)
+          ? `${km.toFixed(1)} km${sessionCount > 1 ? ` · ${sessionCount}×` : ''}`
           : isFuture
             ? 'locked'
             : isToday

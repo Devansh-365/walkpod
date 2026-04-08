@@ -1,11 +1,30 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Ticket } from './components/ticket'
-import { useChallenge, currentDayNumber, todayIso } from './lib/storage'
+import {
+  useChallenge,
+  currentDayNumber,
+  todayIso,
+  dayKm,
+  isDayDone,
+} from './lib/storage'
+import type { ChallengeState } from './lib/storage'
+import {
+  useGithubConfig,
+  useAutoSync,
+  type SyncStatus,
+} from './lib/github-sync'
 
 function App() {
   const [state, setState] = useChallenge()
   const [pendingKm, setPendingKm] = useState<number>(5)
   const [editingDay, setEditingDay] = useState<number | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // GitHub sync state lives at the top so the auto-push effect can watch it.
+  const [config, setConfig] = useGithubConfig()
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle' })
+  const onStatus = useCallback(setSyncStatus, [])
+  useAutoSync(state, config, onStatus)
 
   const today = useMemo(
     () =>
@@ -16,16 +35,13 @@ function App() {
   const todayEntry = state.entries[today]
 
   const completedDays = useMemo(
-    () => Object.values(state.entries).filter((e) => e.done).length,
+    () => Object.values(state.entries).filter(isDayDone).length,
     [state.entries],
   )
 
   const totalKm = useMemo(
     () =>
-      Object.values(state.entries).reduce(
-        (sum, e) => sum + (e.done ? e.km || 0 : 0),
-        0,
-      ),
+      Object.values(state.entries).reduce((sum, e) => sum + dayKm(e), 0),
     [state.entries],
   )
 
@@ -35,10 +51,8 @@ function App() {
   )
 
   function openSheet(day: number) {
-    // Disallow logging future days.
-    if (day > today) return
-    const existing = state.entries[day]
-    setPendingKm(existing?.km && existing.km > 0 ? existing.km : 5)
+    if (day > today) return // future days locked
+    setPendingKm(5)
     setEditingDay(day)
   }
 
@@ -46,18 +60,51 @@ function App() {
     setEditingDay(null)
   }
 
-  function logEntry() {
-    if (pendingKm <= 0 || editingDay == null) return
-    setState((s) => ({
-      ...s,
-      // First-ever log seeds the start date so day 1 == today.
-      startDate: s.startDate ?? todayIso(),
-      entries: {
-        ...s.entries,
-        [editingDay]: { km: pendingKm, done: true },
-      },
-    }))
-    setEditingDay(null)
+  /**
+   * Append a new session. The day is *always* "today" — derived from the
+   * system clock at the moment of logging — even if the user opened the
+   * sheet from today's pill. Past days are read-only.
+   */
+  function addSession() {
+    if (pendingKm <= 0) return
+    const at = new Date().toISOString()
+    setState((s) => {
+      const startDate = s.startDate ?? todayIso()
+      const day = Math.min(
+        s.totalDays,
+        Math.max(1, currentDayNumber(startDate)),
+      )
+      const existing = s.entries[day]?.sessions ?? []
+      return {
+        ...s,
+        startDate,
+        entries: {
+          ...s.entries,
+          [day]: { sessions: [...existing, { km: pendingKm, at }] },
+        },
+      }
+    })
+    setPendingKm(5)
+  }
+
+  /** Remove a single session from a specific day. Used to fix mistakes. */
+  function removeSession(day: number, sessionIndex: number) {
+    setState((s) => {
+      const existing = s.entries[day]?.sessions
+      if (!existing) return s
+      const next = existing.filter((_, i) => i !== sessionIndex)
+      const nextEntries = { ...s.entries }
+      if (next.length === 0) {
+        delete nextEntries[day]
+      } else {
+        nextEntries[day] = { sessions: next }
+      }
+      return { ...s, entries: nextEntries }
+    })
+  }
+
+  function replaceState(next: ChallengeState) {
+    setState(next)
   }
 
   return (
@@ -72,9 +119,18 @@ function App() {
         editingDay={editingDay}
         pendingKm={pendingKm}
         setPendingKm={setPendingKm}
-        logEntry={logEntry}
+        addSession={addSession}
+        removeSession={removeSession}
         openSheet={openSheet}
         closeSheet={closeSheet}
+        settingsOpen={settingsOpen}
+        openSettings={() => setSettingsOpen(true)}
+        closeSettings={() => setSettingsOpen(false)}
+        config={config}
+        setConfig={setConfig}
+        syncStatus={syncStatus}
+        setSyncStatus={setSyncStatus}
+        replaceState={replaceState}
       />
     </div>
   )

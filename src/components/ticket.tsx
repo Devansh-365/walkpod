@@ -1,9 +1,13 @@
 import type { ChallengeState, DayEntry } from '../lib/storage'
-import { formatDateDots, dateForDay } from '../lib/storage'
+import { formatDateDots, dateForDay, dayKm } from '../lib/storage'
+import type { GithubConfig, SyncStatus } from '../lib/github-sync'
 import { PillGrid } from './pill-grid'
 import { KmRoller } from './km-roller'
 import { BottomSheet } from './bottom-sheet'
 import { Fab } from './fab'
+import { SessionList } from './session-list'
+import { SettingsButton } from './settings-button'
+import { SettingsSheet } from './settings-sheet'
 
 type Props = {
   state: ChallengeState
@@ -15,9 +19,18 @@ type Props = {
   editingDay: number | null
   pendingKm: number
   setPendingKm: (n: number) => void
-  logEntry: () => void
+  addSession: () => void
+  removeSession: (day: number, sessionIndex: number) => void
   openSheet: (day: number) => void
   closeSheet: () => void
+  settingsOpen: boolean
+  openSettings: () => void
+  closeSettings: () => void
+  config: GithubConfig
+  setConfig: (c: GithubConfig) => void
+  syncStatus: SyncStatus
+  setSyncStatus: (s: SyncStatus) => void
+  replaceState: (s: ChallengeState) => void
 }
 
 export function Ticket({
@@ -30,18 +43,29 @@ export function Ticket({
   editingDay,
   pendingKm,
   setPendingKm,
-  logEntry,
+  addSession,
+  removeSession,
   openSheet,
   closeSheet,
+  settingsOpen,
+  openSettings,
+  closeSettings,
+  config,
+  setConfig,
+  syncStatus,
+  setSyncStatus,
+  replaceState,
 }: Props) {
-  const isDone = !!todayEntry?.done
   const sheetOpen = editingDay !== null
-  const editingExisting =
-    editingDay !== null && !!state.entries[editingDay]?.done
+  const editingIsToday = editingDay === today
+  const editingEntry = editingDay !== null ? state.entries[editingDay] : undefined
   const editingDate = editingDay !== null ? dateForDay(state.startDate, editingDay) : null
+  const editingTotal = dayKm(editingEntry)
 
   return (
     <div className="relative w-full max-w-[480px] bg-cream min-h-screen flex flex-col overflow-x-clip">
+      <SettingsButton onClick={openSettings} />
+
       {/* Header */}
       <div className="px-7 pt-7 pb-5">
         <div className="flex items-start justify-between font-mono text-[11px] uppercase text-pomegranate-600 tracking-wider">
@@ -49,7 +73,7 @@ export function Ticket({
             <div className="opacity-80">start:</div>
             <div className="font-bold">{formatDateDots(state.startDate)}</div>
           </div>
-          <div className="text-right">
+          <div className="text-right pr-12">
             <div className="opacity-80">day:</div>
             <div className="font-bold">
               {String(today).padStart(2, '0')} / {state.totalDays}
@@ -151,10 +175,10 @@ export function Ticket({
         </div>
         <div className="text-right">
           <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400">
-            today
+            today &middot; {todayEntry?.sessions.length ?? 0} sess
           </div>
           <div className="font-slab font-black text-pomegranate-600 text-[28px] leading-none mt-1">
-            {isDone ? (todayEntry?.km ?? 0).toFixed(1) : '—'}
+            {todayEntry ? dayKm(todayEntry).toFixed(1) : '—'}
             <span className="font-mono text-[11px] tracking-widest ml-1">KM</span>
           </div>
         </div>
@@ -164,32 +188,79 @@ export function Ticket({
       <div className="flex-1" />
       <div className="h-[120px]" aria-hidden="true" />
 
-      {/* Floating action button — always logs/edits TODAY */}
-      <Fab onClick={() => openSheet(today)} isDone={isDone} />
+      {/* Floating action button */}
+      <Fab onClick={() => openSheet(today)} />
 
-      {/* Bottom sheet — km roller + log */}
+      {/* Log sheet — adds a new session OR shows past day's sessions */}
       <BottomSheet
         open={sheetOpen}
         onClose={closeSheet}
-        title={`Log day ${editingDay ?? ''}`}
+        title={editingIsToday ? 'log a walk' : `day ${editingDay}`}
       >
-        <div className="px-7 pt-3 pb-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1 pl-[0.22em]">
+        <div className="px-7 pt-3 pb-8 max-h-[78vh] overflow-y-auto no-scrollbar">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-3 pl-[0.22em]">
             day {editingDay ?? today}
-            {editingDate && <span className="opacity-60"> · {formatDateDots(editingDate)}</span>}
-            {' — '}
-            {editingExisting ? 'edit distance' : 'dial in distance'}
+            {editingDate && (
+              <span className="opacity-60"> &middot; {formatDateDots(editingDate)}</span>
+            )}
+            {!editingIsToday && <span className="opacity-60"> &middot; past day</span>}
           </div>
-          <KmRoller value={pendingKm} onChange={setPendingKm} />
-          <button
-            onClick={logEntry}
-            disabled={pendingKm <= 0}
-            className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-          >
-            {editingExisting ? 'update' : 'log'} {pendingKm.toFixed(1)} km
-          </button>
+
+          {editingEntry && (
+            <div className="mb-4">
+              <SessionList
+                sessions={editingEntry.sessions}
+                onDelete={
+                  editingDay !== null
+                    ? (i) => removeSession(editingDay, i)
+                    : undefined
+                }
+              />
+            </div>
+          )}
+
+          {editingIsToday ? (
+            <>
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-400 text-center mb-1 pl-[0.22em]">
+                {editingTotal > 0 ? 'add another session' : 'dial in distance'}
+              </div>
+              <KmRoller value={pendingKm} onChange={setPendingKm} />
+              <button
+                onClick={addSession}
+                disabled={pendingKm <= 0}
+                className="mt-4 w-full bg-pomegranate-600 text-cream font-mono text-xs uppercase tracking-[0.25em] py-4 hover:bg-pomegranate-700 active:translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                log {pendingKm.toFixed(1)} km
+              </button>
+              {editingTotal > 0 && (
+                <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.22em] text-pomegranate-300 text-center">
+                  total today will be{' '}
+                  <span className="text-pomegranate-600 font-bold">
+                    {(editingTotal + pendingKm).toFixed(1)} km
+                  </span>
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="font-mono text-[11px] text-pomegranate-400 text-center leading-relaxed py-2">
+              past days are read-only. you can remove a wrong entry, but new
+              sessions are always logged to today.
+            </p>
+          )}
         </div>
       </BottomSheet>
+
+      {/* Settings sheet — backup + GitHub sync */}
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={closeSettings}
+        state={state}
+        setState={replaceState}
+        config={config}
+        setConfig={setConfig}
+        syncStatus={syncStatus}
+        setSyncStatus={setSyncStatus}
+      />
     </div>
   )
 }

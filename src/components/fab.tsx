@@ -1,21 +1,19 @@
 type Props = {
   onClick: () => void
-  isDone: boolean
 }
 
 /**
  * Floating action button anchored to the bottom-right of the centered
- * ticket column. Uses a fixed-position outer wrapper so the FAB stays
- * inside the ticket's right edge on desktop and the viewport edge on
- * mobile.
+ * ticket column. Always shows a + icon — every tap opens the log
+ * sheet for today, regardless of whether today already has sessions.
  */
-export function Fab({ onClick, isDone }: Props) {
+export function Fab({ onClick }: Props) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 pointer-events-none flex justify-center">
       <div className="relative w-full max-w-[480px] h-0">
         <button
           onClick={onClick}
-          aria-label={isDone ? 'edit today’s logged distance' : 'log today’s distance'}
+          aria-label="log a walking session"
           className={
             'pointer-events-auto absolute bottom-6 right-6 w-[64px] h-[64px] rounded-full ' +
             'bg-pomegranate-600 text-cream flex items-center justify-center ' +
@@ -24,35 +22,17 @@ export function Fab({ onClick, isDone }: Props) {
             'transition-all duration-200 cursor-pointer ring-2 ring-cream'
           }
         >
-          {isDone ? (
-            // Pencil — affords editing
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-6 h-6"
-              aria-hidden="true"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-            </svg>
-          ) : (
-            // Plus
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              className="w-7 h-7"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          )}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            className="w-7 h-7"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
         </button>
       </div>
     </div>
