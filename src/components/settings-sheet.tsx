@@ -1,9 +1,19 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import type { ChallengeState } from '../lib/storage'
 import type { GithubConfig, SyncStatus } from '../lib/github-sync'
 import { isConfigured, pullState, pushState } from '../lib/github-sync'
 import { exportToFile, readBackupFile } from '../lib/backup'
 import { BottomSheet } from './bottom-sheet'
+import { Dialog } from './dialog'
+
+type DialogSpec = {
+  title: string
+  body?: ReactNode
+  confirmLabel?: string
+  danger?: boolean
+  alert?: boolean // no cancel button
+  onConfirm: () => void
+}
 
 type Props = {
   open: boolean
@@ -42,6 +52,11 @@ export function SettingsSheet({
 }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState<null | 'push' | 'pull'>(null)
+  const [dialog, setDialog] = useState<DialogSpec | null>(null)
+
+  function closeDialog() {
+    setDialog(null)
+  }
 
   function handleImportClick() {
     fileInput.current?.click()
@@ -53,14 +68,21 @@ export function SettingsSheet({
     if (!file) return
     try {
       const next = await readBackupFile(file)
-      const ok = window.confirm(
-        'Replace your current walkpod data with the backup file? This cannot be undone.',
-      )
-      if (ok) setState(next)
+      setDialog({
+        title: 'replace current data?',
+        body: 'Importing this backup will overwrite every session currently on this device. Your GitHub sync settings stay put.',
+        confirmLabel: 'replace',
+        danger: true,
+        onConfirm: () => setState(next),
+      })
     } catch (err) {
-      window.alert(
-        err instanceof Error ? err.message : 'could not read that file',
-      )
+      setDialog({
+        title: 'import failed',
+        body: err instanceof Error ? err.message : 'could not read that file',
+        confirmLabel: 'ok',
+        alert: true,
+        onConfirm: () => {},
+      })
     }
   }
 
@@ -82,18 +104,19 @@ export function SettingsSheet({
     }
   }
 
-  async function handlePullNow() {
-    if (!isConfigured(config)) return
-    const ok = window.confirm(
-      'Replace your local walkpod data with the cloud copy? This cannot be undone.',
-    )
-    if (!ok) return
+  async function doPull() {
     setBusy('pull')
     setSyncStatus({ state: 'syncing' })
     try {
       const cloud = await pullState(config)
       if (!cloud) {
-        window.alert('no cloud backup found yet — push first')
+        setDialog({
+          title: 'nothing in the cloud yet',
+          body: 'There’s no backup file in your GitHub repo. Push once from this device before you can restore.',
+          confirmLabel: 'ok',
+          alert: true,
+          onConfirm: () => {},
+        })
         setSyncStatus({ state: 'idle' })
       } else {
         setState(cloud)
@@ -110,21 +133,45 @@ export function SettingsSheet({
     }
   }
 
+  function handlePullNow() {
+    if (!isConfigured(config)) return
+    setDialog({
+      title: 'restore from cloud?',
+      body: 'This replaces the walkpod data on this device with whatever is in your GitHub repo. Local changes since the last sync will be lost.',
+      confirmLabel: 'restore',
+      danger: true,
+      onConfirm: () => {
+        doPull()
+      },
+    })
+  }
+
   function setField<K extends keyof GithubConfig>(key: K, value: GithubConfig[K]) {
     setConfig({ ...config, [key]: value })
   }
 
   function handleReset() {
-    const first = window.confirm(
-      'Wipe ALL walking data and start the challenge over?\n\nThis clears every session and resets day 1 to whenever you log next. Your GitHub sync settings stay put.',
-    )
-    if (!first) return
-    const second = window.confirm(
-      'Really sure? This cannot be undone unless you have a backup file.',
-    )
-    if (!second) return
-    onReset()
-    onClose()
+    setDialog({
+      title: 'reset walkpod?',
+      body: (
+        <>
+          Wipes every logged session and unsets day 1. Day 1 becomes whenever
+          you log next, not the moment you tap reset.
+          <br />
+          <br />
+          <span className="text-pomegranate-700 font-bold">
+            Export a backup first
+          </span>{' '}
+          if you want to keep your history. GitHub sync settings stay put.
+        </>
+      ),
+      confirmLabel: 'reset',
+      danger: true,
+      onConfirm: () => {
+        onReset()
+        onClose()
+      },
+    })
   }
 
   const configured = isConfigured(config)
@@ -282,6 +329,20 @@ export function SettingsSheet({
           </button>
         </Section>
       </div>
+
+      <Dialog
+        open={dialog !== null}
+        title={dialog?.title ?? ''}
+        body={dialog?.body}
+        confirmLabel={dialog?.confirmLabel}
+        cancelLabel={dialog?.alert ? null : 'cancel'}
+        danger={dialog?.danger}
+        onConfirm={() => {
+          dialog?.onConfirm()
+          closeDialog()
+        }}
+        onCancel={closeDialog}
+      />
     </BottomSheet>
   )
 }
