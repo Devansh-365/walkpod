@@ -107,6 +107,21 @@ function App() {
     setState(next)
   }
 
+  /**
+   * Wipe all walking data and start the challenge over. Does not touch
+   * the GitHub sync config — if auto-sync is on, the cleared state will
+   * be pushed on the next debounce, which is probably what you want
+   * (a fresh start on every device).
+   */
+  function resetChallenge() {
+    setState((s) => ({
+      startDate: null,
+      totalDays: s.totalDays,
+      entries: {},
+    }))
+    setEditingDay(null)
+  }
+
   return (
     <div className="min-h-screen w-full bg-cream flex justify-center">
       <Ticket
@@ -131,6 +146,7 @@ function App() {
         syncStatus={syncStatus}
         setSyncStatus={setSyncStatus}
         replaceState={replaceState}
+        resetChallenge={resetChallenge}
       />
     </div>
   )

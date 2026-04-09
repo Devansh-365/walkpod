@@ -14,6 +14,7 @@ type Props = {
   setConfig: (next: GithubConfig) => void
   syncStatus: SyncStatus
   setSyncStatus: (s: SyncStatus) => void
+  onReset: () => void
 }
 
 function relativeTime(iso: string): string {
@@ -37,6 +38,7 @@ export function SettingsSheet({
   setConfig,
   syncStatus,
   setSyncStatus,
+  onReset,
 }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState<null | 'push' | 'pull'>(null)
@@ -110,6 +112,19 @@ export function SettingsSheet({
 
   function setField<K extends keyof GithubConfig>(key: K, value: GithubConfig[K]) {
     setConfig({ ...config, [key]: value })
+  }
+
+  function handleReset() {
+    const first = window.confirm(
+      'Wipe ALL walking data and start the challenge over?\n\nThis clears every session and resets day 1 to whenever you log next. Your GitHub sync settings stay put.',
+    )
+    if (!first) return
+    const second = window.confirm(
+      'Really sure? This cannot be undone unless you have a backup file.',
+    )
+    if (!second) return
+    onReset()
+    onClose()
   }
 
   const configured = isConfigured(config)
@@ -249,6 +264,22 @@ export function SettingsSheet({
           </div>
 
           <SyncStatusLine status={syncStatus} configured={configured} />
+        </Section>
+
+        {/* ---------- Danger zone: wipe local data ---------- */}
+        <Section title="danger zone">
+          <p className="font-mono text-[11px] text-pomegranate-500 leading-relaxed mb-3">
+            Start the 75-day challenge over from scratch. Clears every logged
+            session and unsets day 1 until you log again. Export a backup first
+            if you want to keep the history.
+          </p>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="w-full bg-pomegranate-950 text-cream font-mono text-[10px] uppercase tracking-[0.2em] py-3 hover:bg-pomegranate-900 active:translate-y-[1px] transition cursor-pointer"
+          >
+            reset walkpod
+          </button>
         </Section>
       </div>
     </BottomSheet>

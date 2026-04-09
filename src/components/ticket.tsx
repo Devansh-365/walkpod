@@ -31,6 +31,7 @@ type Props = {
   syncStatus: SyncStatus
   setSyncStatus: (s: SyncStatus) => void
   replaceState: (s: ChallengeState) => void
+  resetChallenge: () => void
 }
 
 export function Ticket({
@@ -55,6 +56,7 @@ export function Ticket({
   syncStatus,
   setSyncStatus,
   replaceState,
+  resetChallenge,
 }: Props) {
   const sheetOpen = editingDay !== null
   const editingIsToday = editingDay === today
@@ -260,6 +262,7 @@ export function Ticket({
         setConfig={setConfig}
         syncStatus={syncStatus}
         setSyncStatus={setSyncStatus}
+        onReset={resetChallenge}
       />
     </div>
   )
